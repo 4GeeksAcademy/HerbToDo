@@ -1,8 +1,5 @@
-
-
 import React, { useState, useEffect } from "react";
-//include images into your bundle
-import rigoImage from "../../img/rigo-baby.jpg";
+import { getTodos } from "../../Util/Todos";
 
 const Home = () => {
 	const [inputValue, setInputValue] = useState("");
@@ -13,37 +10,30 @@ const Home = () => {
 		setTodos(updatedTodos);
 	};
 
-	const handleEdit = (index, newValue) => {
-		setTodos((prevTodos) => {
-			const updatedTodos = [...prevTodos]; // Deep copy using spread syntax
-			updatedTodos[index] = newValue;
-			return updatedTodos;
+	const handleEdit = (index, newLabel) => {
+		const updatedTodos = todos.map((todo, i) => {
+			if (i === index) {
+				return { ...todo, label: newLabel };
+			}
+			return todo;
 		});
+		setTodos(updatedTodos);
 	};
 
 	useEffect(() => {
-		fetch("https://playground.4geeks.com/todo/user/alesanchezr", {
-			method: "PUT",
-			body: JSON.stringify(todos),
-			headers: {
-				"Content-Type": "application/json",
-			},
-		})
-			.then((resp) => {
-				console.log(resp.ok); // Will be true if the response is successful
-				console.log(resp.status); // The status code=200 or code=400 etc.
-				console.log(resp.text()); // Will try to return the exact result as a string
-				return resp.json(); // (returns promise) Will try to parse the result as JSON and return a promise that you can .then for results
-			})
-			.then((data) => {
-				// Here is where your code should start after the fetch finishes
-				console.log(data); // This will print on the console the exact object received from the server
-			})
-			.catch((error) => {
-				// Error handling
-				console.error(error);
-			});
-	}, [todos]);
+		getTodos().then((data) => {
+			setTodos(todos.concat(data));
+		});
+		console.log("todos", todos);
+	}, []);
+
+	const addTodo = () => {
+		if (inputValue.trim() !== "") {
+			const newTodo = { label: inputValue };
+			setTodos([...todos, newTodo]);
+			setInputValue("");
+		}
+	};
 
 	return (
 		<div className="container">
@@ -56,26 +46,27 @@ const Home = () => {
 						value={inputValue}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") {
-								setTodos(todos.concat(inputValue));
-								setInputValue("");
+								addTodo();
 							}
 						}}
 						placeholder="What do you need to do"
 					/>
 				</li>
-				{todos.map((todo, index) => (
-					<li key={index}>
-						<input
-							type="text"
-							value={todo}
-							onChange={(e) => handleEdit(index, e.target.value)}
-						/>
-						<i
-							className="fas fa-trash-alt"
-							onClick={() => handleDelete(index)}
-						></i>
-					</li>
-				))}
+				{todos
+					? todos.map((todo, index) => (
+							<li key={index}>
+								<i
+									className="fas fa-trash-alt"
+									onClick={() => handleDelete(index)}
+								></i>
+								<input
+									type="text"
+									value={todo.label}
+									onChange={(e) => handleEdit(index, e.target.value)}
+								/>
+							</li>
+						))
+					: null}
 			</ul>
 			<div>{todos.length} tasks</div>
 		</div>
